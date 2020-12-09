@@ -31,7 +31,7 @@ date: 2020-12-09
 
 ```bash
 # 클라이언트 측에서 서버에 연결할 때의 과정을 상세히 출력해보도록 합니다.
-$ ssh -i ~/.ssh/id_rsa_macbook_pro15 user@123.456.789.123 -p 7788 -v
+$ ssh -i ~/.ssh/id_rsa_macbook_pro15 user@123.456.789.123 -p 28888 -v
 
 # 리모트 서버측의 로그를 확인하도록 합니다.
 sudo tail -f /var/log/secure
