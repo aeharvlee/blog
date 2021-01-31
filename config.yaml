@@ -2,7 +2,7 @@ languageCode: "ko-kr"
 baseUrl: "aeharvlee.github.io"
 title: "Road to Architect"
 theme: "anubis"
-paginate: 10
+paginate: 10000
 disqusShortname: aeharv
 googleAnalytics: UA-123-45
 enableRobotsTXT: true
@@ -31,6 +31,10 @@ params:
   readMore: false
 
 markup:
+  tableOfContents:
+    endLevel: 3
+    ordered: true
+    startLevel: 2
   goldmark:
     extensions:
       definitionList: true
@@ -48,4 +52,3 @@ markup:
       hardWraps: false
       unsafe: false # enable raw HTML in Markdown
       xhtml: false
-
