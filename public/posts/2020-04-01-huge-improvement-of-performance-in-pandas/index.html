@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+
+<html lang="ko-kr" data-theme="">
+<head>
+    
+        
+<meta charset="utf-8">
+<meta name="HandheldFriendly" content="True">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer-when-downgrade">
+
+<title>Huge Improvement of performance in pandas - Road to Architect</title>
+<meta name="description" content="">
+
+<link rel="icon" type="image/x-icon" href="aeharvlee.github.io/favicon.ico">
+<link rel="apple-touch-icon-precomposed" href="aeharvlee.github.io/favicon.png">
+
+
+
+    
+
+
+
+
+
+    
+    
+    
+
+    
+        <link rel="stylesheet" href="/aeharvlee.github.io/css/style.6155b6d8eded05b985178f56a637943b3e7fcfccc913d9c656bbebce7c91cc6b.css" integrity="sha256-YVW22O3tBbmFF49WpjeUOz5/z8zJE9nGVrvrznyRzGs=">
+    
+
+
+
+
+
+    
+
+
+
+
+
+    
+        <link rel="stylesheet" href="aeharvlee.github.io/css/my.css?rnd=1619249206">
+    
+
+
+
+
+    
+
+
+
+
+
+    
+        <script src="aeharvlee.github.io/js/main.js?rnd=1619249206" type="text/javascript" charset="utf-8"></script>
+    
+
+
+<meta property="og:title" content="Huge Improvement of performance in pandas" />
+<meta property="og:description" content="1. Introduction  pandas는 파이썬에서 사용되는 데이터 분석 라이브러리입니다. 데이터를 처리하는데 매우 빠르고 능합니다. 🚗
+ 그러나 결국 pandas도 하나의 라이브러리, 도구이기 때문에 잘못 사용하는 경우 프로그램 성능이 급격하게 안좋아질 수 있습니다.
+본 글에서는 제가 클라우드브릭에서 Malicious IPv4 서비스를 개발 중에 겪었던 실제 사례를 통해 어떻게 하면 성능 저하가 심해지는지, 그리고 이를 어떻게 극복했는지를 공유드리고자 합니다. 💪
+2. Body 2.1. 상황 설명 특정 아이피가 얼마나 위험한지에 대한 정보를 담고 있는 ildf(=intrusion log DataFrame)라는 DataFrame이 있습니다." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="aeharvlee.github.io/posts/2020-04-01-huge-improvement-of-performance-in-pandas/" /><meta property="og:image" content="aeharvlee.github.io/images/og-featured.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-04-01T00:00:00&#43;00:00" />
+<meta property="article:modified_time" content="2020-04-01T00:00:00&#43;00:00" />
+
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="aeharvlee.github.io/images/og-featured.png"/>
+
+<meta name="twitter:title" content="Huge Improvement of performance in pandas"/>
+<meta name="twitter:description" content="1. Introduction  pandas는 파이썬에서 사용되는 데이터 분석 라이브러리입니다. 데이터를 처리하는데 매우 빠르고 능합니다. 🚗
+ 그러나 결국 pandas도 하나의 라이브러리, 도구이기 때문에 잘못 사용하는 경우 프로그램 성능이 급격하게 안좋아질 수 있습니다.
+본 글에서는 제가 클라우드브릭에서 Malicious IPv4 서비스를 개발 중에 겪었던 실제 사례를 통해 어떻게 하면 성능 저하가 심해지는지, 그리고 이를 어떻게 극복했는지를 공유드리고자 합니다. 💪
+2. Body 2.1. 상황 설명 특정 아이피가 얼마나 위험한지에 대한 정보를 담고 있는 ildf(=intrusion log DataFrame)라는 DataFrame이 있습니다."/>
+
+
+
+
+
+
+
+
+
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to main content</a>
+    <div class="container">
+        <header class="common-header"> 
+            
+                <h1 class="site-title">
+    <a href="/aeharvlee.github.io">Road to Architect</a>
+</h1>
+
+    <nav>
+        
+        
+        <a class="" href="aeharvlee.github.io/aeharvlee.github.io/posts/" title="Archive">Archive</a>
+        
+    </nav>
+
+
+            
+        </header>
+        <main id="main" tabindex="-1"> 
+            
+    
+    
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Huge Improvement of performance in pandas</h1>
+        </header>
+        <aside>
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#1-introduction">1. Introduction</a></li>
+    <li><a href="#2-body">2. Body</a>
+      <ol>
+        <li><a href="#21-상황-설명">2.1. 상황 설명</a></li>
+        <li><a href="#22-성능-저하-문제-발생">2.2. 성능 저하 문제 발생</a></li>
+        <li><a href="#23-문제-해결">2.3. 문제 해결</a></li>
+      </ol>
+    </li>
+    <li><a href="#3-결론">3. 결론</a></li>
+  </ol>
+</nav>
+        </aside>
+        <div class="content">
+            <p><img src="/images/2020-04-01-huge-improvement-of-performance-in-pandas/0.png" alt="pandas"></p>
+<h2 id="1-introduction">1. Introduction</h2>
+<blockquote>
+<p>pandas는 파이썬에서 사용되는 데이터 분석 라이브러리입니다. 데이터를 처리하는데 매우 빠르고 능합니다. 🚗</p>
+</blockquote>
+<p>그러나 결국 pandas도 하나의 라이브러리, 도구이기 때문에 <strong>잘못 사용하는 경우 프로그램 성능이 급격하게 안좋아질 수 있습니다.</strong></p>
+<p>본 글에서는 제가 클라우드브릭에서 <strong>Malicious IPv4</strong> 서비스를 개발 중에 겪었던 실제 사례를 통해 어떻게 하면 성능 저하가 심해지는지, 그리고 이를 어떻게 극복했는지를 공유드리고자 합니다. 💪</p>
+<h2 id="2-body">2. Body</h2>
+<h3 id="21-상황-설명">2.1. 상황 설명</h3>
+<p>특정 아이피가 얼마나 위험한지에 대한 정보를 담고 있는 <strong>ildf</strong>(=intrusion log DataFrame)라는 <strong>DataFrame</strong>이 있습니다. 약 200만개의 로우를 담고 있고 <strong>ildf</strong>로부터 제가 얻고 싶은 데이터는 <strong>“각 아이피가 어떤 목적의 공격을 몇 번 행했는가?”</strong> 입니다.</p>
+<p>이를 위해 저는 pandas.DataFrame.<strong>groupby</strong> 연산을 사용하여 그룹화된 정보를 추출했고 데이터는 아래와 같습니다.</p>
+<script type="application/javascript" src="https://gist.github.com/aeharvlee/6c675bf180c25096e69738050225253d.js"></script>
+
+<blockquote>
+<p>데이터베이스에 아이피 정보를 스트링 포맷(e.g., 127.0.0.1)이 아닌 Integer로 저장했는데 이는 <strong>쿼리의 성능</strong>과 <strong>데이터의 무결성</strong>을 위함입니다. 일반적으로 아이피를 저장할 때는 String이 아닌 <strong>Integer</strong>로 저장합니다. 👀</p>
+</blockquote>
+<p>위의 데이터를 보면 **“각 아이피가 어떤 목적의 공격을 몇 번 행했는가?”**에 대한 정보가 나와 있습니다. 원하는 정보를 얻어냈으니 다음으로 제가 하고싶은 작업은 뽑아낸 정보를 데이터베이스화 하는 작업입니다.</p>
+<p>위처럼 가공하는 이유는 전세계 곳곳에 분포되어 있는 클라우드브릭의 <strong>WAF</strong>(Web Application Firewall)가 수집하는 탐지로그(Raw data)를 그대로 활용하는 것보다는 가공해서 클라우드브릭이 <strong>차단한 아이피에 대해 의미 있는 정보를 추출하고 이를 서비스 곳곳에 활용하기 위함입니다.</strong> 💪</p>
+<p>데이터베이스화를 원활히 진행하기 위해 새로운 <strong>DataFrame</strong>을 생성하였고 컬럼은 아래처럼 클라우드브릭에서 취급하는 <strong>공격 목적의 이름들로 구성했습니다.</strong></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#f92672">&gt;</span> stat_pd <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>DataFrame(columns<span style="color:#f92672">=</span>[<span style="color:#e6db74">&#39;ipv4&#39;</span>, <span style="color:#e6db74">&#39;vulnerability_scan&#39;</span>, <span style="color:#e6db74">&#39;falsifying_websites&#39;</span>, <span style="color:#e6db74">&#39;interrupting_server&#39;</span>, <span style="color:#e6db74">&#39;spreading_malware&#39;</span>, <span style="color:#e6db74">&#39;identity_theft&#39;</span>, <span style="color:#e6db74">&#39;monetary_loss&#39;</span>])
+</code></pre></div><p>위 <strong>DataFrame</strong>에서 <strong>ipv4</strong>는 Primary Key이고, 특정 아이피가 어떤 목적으로 공격을 몇 번 행했는지를 <code>stat_pd</code>의 각 컬럼에 integer 값으로 기록합니다. 공격 이력이 없는 컬럼에 대해서는 디폴트로 0이 삽입됩니다. (해당 목적의 공격을 하지 않았으니 횟수가 0이 되는 것은 당연합니다.)</p>
+<h3 id="22-성능-저하-문제-발생">2.2. 성능 저하 문제 발생</h3>
+<p>데이터베이스화를 위한 준비를 마쳤으니 새로 생성한 <strong>DataFrame</strong> <code>stat_pd</code>에 값을 삽입할 차례입니다.</p>
+<p>제가 처음에 시도한 방식은 아래와 같습니다. 약 200만개의 아이피를 순회하면서 각 아이피의 공격 목적과 횟수를 <code>stat_pd</code>에 삽입하기 위한 연산을 진행했습니다.</p>
+<script type="application/javascript" src="https://gist.github.com/aeharvlee/0196a2d529fe382bdb9c6eeb5c8ebe1d.js"></script>
+
+<p>각각 리스트를 생성하고 컬럼에 통째로 삽입해주는 방법을 사용한 건 속도를 위해서였습니다만, 결과적으로 위와 같이 코딩하면 계산과정에서만 <strong>약 20분 정도의 시간이 소요됩니다.</strong> 🐢</p>
+<p>고작 200만개의 데이터를 선형 탐색하며 처리하는데 걸리는 시간이 20분이라니… 말도 안되는 성능입니다. 도대체 왜 이렇게 오래 걸린걸까요? 🤔</p>
+<p>위 코드 중 병목이 생기는 구간은 바로 10라인의 <code>for attack_purpose, detected_cnt in grp_attack_purpose[ipv4].items(): </code>부분입니다. ✅</p>
+<p>아래와 같은 데이터에 대해 특정 아이피로 탐색하여 각 항목과 숫자를 가져오는 연산을 200만번 반복했기 때문에 시간이 오래 걸린 것입니다. 루프가 한번 돌 때마다 아래의 데이터 구조에서 <strong>특정 아이피로 조회를 해서 데이터를 가져오는 것</strong>이므로 속도가 당연 느릴 수밖에 없었습니다. 😫</p>
+<script type="application/javascript" src="https://gist.github.com/aeharvlee/e08455b1741d62ab33400f421fb88186.js"></script>
+
+<h3 id="23-문제-해결">2.3. 문제 해결</h3>
+<p>위와 같은 문제를 해결하기 위해서는 어떻게 하면 좋을까요? 이에 대해 제가 내린 해답은 <strong>“컴퓨터가 가장 잘하는 것을 활용하자&quot;</strong> 였습니다. ☝️</p>
+<p>컴퓨터가 잘하는 건 바로 위에서부터 아래로 단순하게 쭈욱 한 번만 훑어보는 것, 즉 O(N)의 시간복잡도로 문제를 해결하는 것입니다.</p>
+<p>저는 <strong>numpy array</strong>를 활용해서 <strong>Row</strong>(아이피의 갯수, 약 200만개) x <strong>Col</strong>(공격목적의 갯수, 7개)의 형태를 가지는 <strong>2차원 배열을 생성했습니다.</strong></p>
+<script type="application/javascript" src="https://gist.github.com/aeharvlee/408e7f80f074a1ef0145eeb3949087cc.js"></script>
+
+<p><strong>단 한번씩만 탐색하면서</strong> 위와 같은 데이터 구조에 값을 할당하기 위해 제가 작성한 코드는 다음과 같습니다.</p>
+<script type="application/javascript" src="https://gist.github.com/aeharvlee/e17a40805dbe7340b9901e764582090e.js"></script>
+
+<p>위에서 눈여겨 보셔야할 점은 위에서부터 순회해서 내려올 때, <strong>하나의 아이피가 여러 개의 공격 목적을 가지는 경우와 그렇지 않은 경우를 어떻게 구분했냐입니다.</strong></p>
+<p>이를 구분하기 위해 저는 <code>before</code>를 사용해서 각 루프마다 이전에 사용된 아이피와 동일한 값인지를 체크해주었습니다.</p>
+<p>만약 값이 동일하다면 다음 로우로 넘어가지 않고 동일한 로우에 다른 컬럼(=다른 공격목적)으로 값을 삽입해주었습니다.</p>
+<p>매우 심플한 솔루션으로 20분이 걸리던 연산이 무려 2분도 안되는 시간으로 단축되었습니다. <strong>약 10배 이상의 성능향상을 누릴 수 있었습니다.</strong> 🎉</p>
+<h2 id="3-결론">3. 결론</h2>
+<p>pandas는 충분히 뛰어난 라이브러리지만, 이를 똑똑하게 사용하지 않으면 그 이점을 누리기 어렵습니다.</p>
+<p>pandas를 사용하는데도 속도가 너무 오래걸리거나 효율이 안나신다면 위와 같은 상황에 놓여있지는 않은지 점검해보면 좋을 것 같습니다. 💪</p>
+
+        </div>
+
+        
+
+    
+
+
+<div class="post-info">
+    
+        <div class="post-date">2020-04-01</div>
+    
+    <div class="post-taxonomies">
+        
+            
+    </div>
+</div>
+
+    </article>
+
+    
+        
+    <div class="pagination post-pagination">
+        <div class="left pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-04-21-go-restful-api-with-python-grpc-server/">Go RESTful API(gRPC Client) &#43; Python gRPC server</a>
+            
+        </div>
+        <div class="right pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-02-26-aws-saa-c01/">AWS Certified Solutions Architect - Associate 취득 후기 공유</a>
+            
+        </div>
+    </div>
+
+    
+
+    
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "aeharv" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    
+
+
+        </main>
+        
+            <footer class="common-footer">
+    
+    
+
+    <div class="common-footer-bottom">
+        
+        <div class="copyright">
+            <p>© Hyunwoo Lee, 2021<br>
+            Powered by <a target="_blank" rel="noopener noreferrer" href="https://gohugo.io/">Hugo</a>, theme <a target="_blank" rel="noopener noreferrer" href="https://github.com/mitrichius/hugo-theme-anubis">Anubis</a>.
+            </p>  
+        </div> 
+
+        
+
+    
+
+
+   
+    </div>
+</footer>
+
+        
+    </div>
+</body>
+</html>

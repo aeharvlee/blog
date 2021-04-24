@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+
+<html lang="ko-kr" data-theme="">
+<head>
+    
+        
+<meta charset="utf-8">
+<meta name="HandheldFriendly" content="True">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer-when-downgrade">
+
+<title>Pubkey Authentication not working - Road to Architect</title>
+<meta name="description" content="">
+
+<link rel="icon" type="image/x-icon" href="aeharvlee.github.io/favicon.ico">
+<link rel="apple-touch-icon-precomposed" href="aeharvlee.github.io/favicon.png">
+
+
+
+    
+
+
+
+
+
+    
+    
+    
+
+    
+        <link rel="stylesheet" href="/aeharvlee.github.io/css/style.6155b6d8eded05b985178f56a637943b3e7fcfccc913d9c656bbebce7c91cc6b.css" integrity="sha256-YVW22O3tBbmFF49WpjeUOz5/z8zJE9nGVrvrznyRzGs=">
+    
+
+
+
+
+
+    
+
+
+
+
+
+    
+        <link rel="stylesheet" href="aeharvlee.github.io/css/my.css?rnd=1619249206">
+    
+
+
+
+
+    
+
+
+
+
+
+    
+        <script src="aeharvlee.github.io/js/main.js?rnd=1619249206" type="text/javascript" charset="utf-8"></script>
+    
+
+
+<meta property="og:title" content="Pubkey Authentication not working" />
+<meta property="og:description" content="리모트 서버와 패스워드 입력 없이 비대칭 키로 원격 접속을 하고 싶은데, 키를 이용한 접속이 되지 않고, 프롬프트에서 패스워드를 요구하는 경우 어떻게 대처하면 좋을지를 알아봅시다.
+저자의 로컬 클라이언트 운영체제는 MacOS Bigsur, 리모트 서버의 경우 CentOS 7으로 되어 있다는 것을 먼저 알려드립니다.
+ 퍼블릭 키를 원격 서버에 잘 두었고, 로컬에 짝이 맞는 개인 키도 있는 상태에서 키를 지정하여 통신하려 했음에도 실패한 경험이 있으시다면 다음과 같은 것들을 점검해보시기 바랍니다.
+1. Check remote server 원격 서버의 /etc/ssh/ssh/sshd_config 파일에 PubkeyAuthentication yes 항목이 있는지 확인합니다." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="aeharvlee.github.io/posts/2020-12-09-pubkey-authentication/" /><meta property="og:image" content="aeharvlee.github.io/images/og-featured.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-12-09T00:00:00&#43;00:00" />
+<meta property="article:modified_time" content="2020-12-09T00:00:00&#43;00:00" />
+
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="aeharvlee.github.io/images/og-featured.png"/>
+
+<meta name="twitter:title" content="Pubkey Authentication not working"/>
+<meta name="twitter:description" content="리모트 서버와 패스워드 입력 없이 비대칭 키로 원격 접속을 하고 싶은데, 키를 이용한 접속이 되지 않고, 프롬프트에서 패스워드를 요구하는 경우 어떻게 대처하면 좋을지를 알아봅시다.
+저자의 로컬 클라이언트 운영체제는 MacOS Bigsur, 리모트 서버의 경우 CentOS 7으로 되어 있다는 것을 먼저 알려드립니다.
+ 퍼블릭 키를 원격 서버에 잘 두었고, 로컬에 짝이 맞는 개인 키도 있는 상태에서 키를 지정하여 통신하려 했음에도 실패한 경험이 있으시다면 다음과 같은 것들을 점검해보시기 바랍니다.
+1. Check remote server 원격 서버의 /etc/ssh/ssh/sshd_config 파일에 PubkeyAuthentication yes 항목이 있는지 확인합니다."/>
+
+
+
+
+
+
+
+
+
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to main content</a>
+    <div class="container">
+        <header class="common-header"> 
+            
+                <h1 class="site-title">
+    <a href="/aeharvlee.github.io">Road to Architect</a>
+</h1>
+
+    <nav>
+        
+        
+        <a class="" href="aeharvlee.github.io/aeharvlee.github.io/posts/" title="Archive">Archive</a>
+        
+    </nav>
+
+
+            
+        </header>
+        <main id="main" tabindex="-1"> 
+            
+    
+    
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Pubkey Authentication not working</h1>
+        </header>
+        <aside>
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#1-check-remote-server">1. Check remote server</a>
+      <ol>
+        <li><a href="#11-lets-add-pubkey">1.1 Let&rsquo;s Add Pubkey</a></li>
+      </ol>
+    </li>
+    <li><a href="#2-check-local-and-remote-server-both">2. Check local and remote server both</a></li>
+  </ol>
+</nav>
+        </aside>
+        <div class="content">
+            <blockquote>
+<p>리모트 서버와 패스워드 입력 없이 비대칭 키로 원격 접속을 하고 싶은데, 키를 이용한 접속이 되지 않고, 프롬프트에서 패스워드를 요구하는 경우 어떻게 대처하면 좋을지를 알아봅시다.</p>
+<p>저자의 로컬 클라이언트 운영체제는 MacOS Bigsur, 리모트 서버의 경우 CentOS 7으로 되어 있다는 것을 먼저 알려드립니다.</p>
+</blockquote>
+<p>퍼블릭 키를 원격 서버에 잘 두었고, 로컬에 짝이 맞는 개인 키도 있는 상태에서 <strong>키를 지정하여 통신하려 했음에도 실패한 경험</strong>이 있으시다면 다음과 같은 것들을 점검해보시기 바랍니다.</p>
+<h2 id="1-check-remote-server">1. Check remote server</h2>
+<p>원격 서버의 <code>/etc/ssh/ssh/sshd_config</code> 파일에 <code>PubkeyAuthentication yes</code> 항목이 있는지 확인합니다. sshd 설정에서 아예 이를 막아둔 경우 키를 활용한 접속이 불가능합니다.
+만약 설정을 변경해주었으면 <code>service sshd restart</code> 해주시기 바랍니다. 변경된 설정을 로드해야하니까요. ✌️</p>
+<h3 id="11-lets-add-pubkey">1.1 Let&rsquo;s Add Pubkey</h3>
+<p>키로 접속하려는 리모트 서버의 <code>.ssh/authorized_keys</code> 파일을 직접 확인하셔서 내가 갖고 있는 개인키와 매칭되는 공개키가 제대로 등록되어 있는지 확인해볼 수도 있겠지만, 확실하게 하기 위해 키를 직접 추가해주도록 합시다. 수작업 보다는 그래도 커맨드로 한 번 더 해주는 것이 좋습니다. ⌨️</p>
+<p><code>ssh-copy-id -i ~/.ssh/id_rsa_macbook_pro15.pub user@123.456.789.123 -p 28888</code></p>
+<p>로컬에서 위와 같은 커맨드를 입력하여 리모트 서버에 키를 추가해주도록 합시다.. 위 커맨드의 가정은 아래와 같습니다.</p>
+<ul>
+<li>접속하려는 리모트 server의 아이피 주소가 123.456.789.123, ssh 접속할 때 사용하는 포트는 28888</li>
+<li>로컬의 private key 파일은 현재 <code>/Users/aeharvlee/local/.ssh/id_rsa_macbook_pro15</code> 로 되어 있으며 리모트 서버의 user 계정으로 접근시도</li>
+</ul>
+<h2 id="2-check-local-and-remote-server-both">2. Check local and remote server both</h2>
+<p>1번에서 매칭되는 공개 키를 잘 추가해주셨다면, 이제 디버깅할 시간입니다. 접속을 시도하는 로컬의 로그와 동시에 타겟 서버인 리모트 서버의 로그를 살펴보면 됩니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#75715e"># 클라이언트 측에서 서버에 연결할 때의 과정을 상세히 출력해보도록 합니다.</span>
+$ ssh -i ~/.ssh/id_rsa_macbook_pro15 user@123.456.789.123 -p <span style="color:#ae81ff">28888</span> -v
+
+<span style="color:#75715e"># 리모트 서버측의 로그를 확인하도록 합니다.</span>
+sudo tail -f /var/log/secure
+</code></pre></div><p>먼저 클라이언트 측 ssh 접속 시도 로그를 살펴보시면, 중간에 키로 접속을 시도하는 구간이 잘 되었는지, 아니면 해당 구간이 제대로 통과되지 않아 결국 패스워드 인증으로 넘어갔는지를 살펴볼 수 있습니다.</p>
+<p>만약 패스워드 인증으로 넘어갔다면 그에 대한 이유가 바로 리모트 서버의 로그에 남습니다. 저의 경우 리모트 서버의 로그를 확인해보니, 접속하려는 계정의 디렉토리 권한이 맞지 않다는 이유로 접속이 안된다는 것을 확인했습니다. 따라서 그에 맞게 아래와 같이 조치를 치해주었고 그 결과 이제는 정상 접속이 되고 있습니다. ✔️</p>
+<pre><code>chmod g-w /home/user/
+chmod 700 .ssh/
+chmod 600 .ssh/authorized_keys
+</code></pre><p>크게 어렵진 않지만 한 번 발을 잘못 디디면 시간을 많이 허비할 수 있는 문제라서, 저처럼 헤매시는 분들이 많이 없길 바라는 마음에서 글을 작성했습니다. 도움이 되길 바랍니다. 🔆</p>
+
+        </div>
+
+        
+
+    
+
+
+<div class="post-info">
+    
+        <div class="post-date">2020-12-09</div>
+    
+    <div class="post-taxonomies">
+        
+            
+    </div>
+</div>
+
+    </article>
+
+    
+        
+    <div class="pagination post-pagination">
+        <div class="left pagination-item disabled">
+            
+        </div>
+        <div class="right pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-08-20-even-faster-reverse-dns-lookup-using-goroutines/">Reverse DNS Lookup Concurrently with Go</a>
+            
+        </div>
+    </div>
+
+    
+
+    
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "aeharv" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    
+
+
+        </main>
+        
+            <footer class="common-footer">
+    
+    
+
+    <div class="common-footer-bottom">
+        
+        <div class="copyright">
+            <p>© Hyunwoo Lee, 2021<br>
+            Powered by <a target="_blank" rel="noopener noreferrer" href="https://gohugo.io/">Hugo</a>, theme <a target="_blank" rel="noopener noreferrer" href="https://github.com/mitrichius/hugo-theme-anubis">Anubis</a>.
+            </p>  
+        </div> 
+
+        
+
+    
+
+
+   
+    </div>
+</footer>
+
+        
+    </div>
+</body>
+</html>

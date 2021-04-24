@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+
+<html lang="ko-kr" data-theme="">
+<head>
+    
+        
+<meta charset="utf-8">
+<meta name="HandheldFriendly" content="True">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer-when-downgrade">
+
+<title>Golang Korea Online Meetup Review - Road to Architect</title>
+<meta name="description" content="">
+
+<link rel="icon" type="image/x-icon" href="aeharvlee.github.io/favicon.ico">
+<link rel="apple-touch-icon-precomposed" href="aeharvlee.github.io/favicon.png">
+
+
+
+    
+
+
+
+
+
+    
+    
+    
+
+    
+        <link rel="stylesheet" href="/aeharvlee.github.io/css/style.6155b6d8eded05b985178f56a637943b3e7fcfccc913d9c656bbebce7c91cc6b.css" integrity="sha256-YVW22O3tBbmFF49WpjeUOz5/z8zJE9nGVrvrznyRzGs=">
+    
+
+
+
+
+
+    
+
+
+
+
+
+    
+        <link rel="stylesheet" href="aeharvlee.github.io/css/my.css?rnd=1619249206">
+    
+
+
+
+
+    
+
+
+
+
+
+    
+        <script src="aeharvlee.github.io/js/main.js?rnd=1619249206" type="text/javascript" charset="utf-8"></script>
+    
+
+
+<meta property="og:title" content="Golang Korea Online Meetup Review" />
+<meta property="og:description" content="고랭 코리아 5월 온라인 밋업 후기 공유드립니다. 저에게 발표할 수 있는 기회를 주신 Golang Korea 정말 감사합니다. 🙌
+Golang Korea Online Meetup 온라인 발표 영상링크: Go와 Python의 이점을 둘 다 누릴 수 있는 마이크로 서비스 아키텍처
+올해 2월부터 5월까지 열심히 개발했던 Threat Intelligence API 서비스 개발 경험을 정리해서 고랭 코리아 온라인 밋업에서 발표를 했습니다. (위 링크를 클릭하시면 발표 내용을 만나보실 수 있습니다.)
+평소 Go언어에 정말 관심이 많고 꼭 회사 프로젝트에서도 사용해보고 싶었습니다." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="aeharvlee.github.io/posts/2020-05-28-golang-korea-meetup/" /><meta property="og:image" content="aeharvlee.github.io/images/og-featured.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-05-28T00:00:00&#43;00:00" />
+<meta property="article:modified_time" content="2020-05-28T00:00:00&#43;00:00" />
+
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="aeharvlee.github.io/images/og-featured.png"/>
+
+<meta name="twitter:title" content="Golang Korea Online Meetup Review"/>
+<meta name="twitter:description" content="고랭 코리아 5월 온라인 밋업 후기 공유드립니다. 저에게 발표할 수 있는 기회를 주신 Golang Korea 정말 감사합니다. 🙌
+Golang Korea Online Meetup 온라인 발표 영상링크: Go와 Python의 이점을 둘 다 누릴 수 있는 마이크로 서비스 아키텍처
+올해 2월부터 5월까지 열심히 개발했던 Threat Intelligence API 서비스 개발 경험을 정리해서 고랭 코리아 온라인 밋업에서 발표를 했습니다. (위 링크를 클릭하시면 발표 내용을 만나보실 수 있습니다.)
+평소 Go언어에 정말 관심이 많고 꼭 회사 프로젝트에서도 사용해보고 싶었습니다."/>
+
+
+
+
+
+
+
+
+
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to main content</a>
+    <div class="container">
+        <header class="common-header"> 
+            
+                <h1 class="site-title">
+    <a href="/aeharvlee.github.io">Road to Architect</a>
+</h1>
+
+    <nav>
+        
+        
+        <a class="" href="aeharvlee.github.io/aeharvlee.github.io/posts/" title="Archive">Archive</a>
+        
+    </nav>
+
+
+            
+        </header>
+        <main id="main" tabindex="-1"> 
+            
+    
+    
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Golang Korea Online Meetup Review</h1>
+        </header>
+        <aside>
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#golang-korea-online-meetup">Golang Korea Online Meetup</a></li>
+  </ol>
+</nav>
+        </aside>
+        <div class="content">
+            <p>고랭 코리아 5월 온라인 밋업 후기 공유드립니다. 저에게 발표할 수 있는 기회를 주신 Golang Korea 정말 감사합니다.  🙌</p>
+<p><img src="/images/2020-05-28-golang-korea-meetup/0.png" alt="presentation_title"></p>
+<h2 id="golang-korea-online-meetup">Golang Korea Online Meetup</h2>
+<p><strong>온라인 발표 영상링크:</strong> <a href="https://www.youtube.com/watch?v=8CYYw7tz8C4">Go와 Python의 이점을 둘 다 누릴 수 있는 마이크로 서비스 아키텍처</a></p>
+<p>올해 2월부터 5월까지 열심히 개발했던 Threat Intelligence API 서비스 개발 경험을 정리해서 고랭 코리아 온라인 밋업에서 발표를 했습니다. (위 링크를 클릭하시면 발표 내용을 만나보실 수 있습니다.)</p>
+<p>평소 Go언어에 정말 관심이 많고 꼭 회사 프로젝트에서도 사용해보고 싶었습니다. 그래서 틈틈이 튜토리얼 그리고 책을 통해 조금씩 접하고 있었는데요, 마침 올해 초에 새로운 서비스 개발이 필요해졌고 해당 프로젝트에서 Go를 사용해볼 수 있었습니다.</p>
+<p>위 밋업 내용은 블로그 포스팅 <a href="https://aeharvlee.github.io/go/python/go-restful-api-with-python-grpc-server/">RESTful API(gRPC Client) + Python gRPC Server</a> 도 작성되어 있으니 글로 봐주셔도 좋을 것 같습니다. 🙂</p>
+<p>온라인에서 발표해보는 건 거의 처음이여서 기대도 되었지만 걱정도 되었는데요, 다행히 발표 당일날 Golang Korea분들께서 편안한 분위기 속에 진행할 수 있게끔 도와주셔서 무사히 마칠 수 있었습니다.</p>
+<p>개발만 하다보면 의욕이 떨어질 때가 간혹 있는데, 블로그 포스팅으로 개발 내용을 공유하거나 밋업에서 발표를 통해 내가 개발한 것들을 공유하고 피드백을 받으면 큰 힘이 되는 것 같습니다.</p>
+<p>지금은 아직 Go린이지만 언젠가 Go수의 대열에 오르고 싶습니다. 다음 밋업에서는 좀 더 Advanced하고 흥미로운 내용을 공유드릴 수 있었으면 좋겠네요.</p>
+<p>읽어주셔서 감사합니다.</p>
+
+        </div>
+
+        
+
+    
+
+
+<div class="post-info">
+    
+        <div class="post-date">2020-05-28</div>
+    
+    <div class="post-taxonomies">
+        
+            
+    </div>
+</div>
+
+    </article>
+
+    
+        
+    <div class="pagination post-pagination">
+        <div class="left pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-06-13-ibm-callforcode-2020/">IBM Call for Code 2020 Korea Hackathon Review</a>
+            
+        </div>
+        <div class="right pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-05-19-renew-table-safely/">How to renew entire table&#39;s rows safely?</a>
+            
+        </div>
+    </div>
+
+    
+
+    
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "aeharv" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    
+
+
+        </main>
+        
+            <footer class="common-footer">
+    
+    
+
+    <div class="common-footer-bottom">
+        
+        <div class="copyright">
+            <p>© Hyunwoo Lee, 2021<br>
+            Powered by <a target="_blank" rel="noopener noreferrer" href="https://gohugo.io/">Hugo</a>, theme <a target="_blank" rel="noopener noreferrer" href="https://github.com/mitrichius/hugo-theme-anubis">Anubis</a>.
+            </p>  
+        </div> 
+
+        
+
+    
+
+
+   
+    </div>
+</footer>
+
+        
+    </div>
+</body>
+</html>

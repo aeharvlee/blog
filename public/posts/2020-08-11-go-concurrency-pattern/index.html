@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+
+<html lang="ko-kr" data-theme="">
+<head>
+    
+        
+<meta charset="utf-8">
+<meta name="HandheldFriendly" content="True">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer-when-downgrade">
+
+<title>Go Concurrecny Patterns in Go Chap4 Queueing - Road to Architect</title>
+<meta name="description" content="">
+
+<link rel="icon" type="image/x-icon" href="aeharvlee.github.io/favicon.ico">
+<link rel="apple-touch-icon-precomposed" href="aeharvlee.github.io/favicon.png">
+
+
+
+    
+
+
+
+
+
+    
+    
+    
+
+    
+        <link rel="stylesheet" href="/aeharvlee.github.io/css/style.6155b6d8eded05b985178f56a637943b3e7fcfccc913d9c656bbebce7c91cc6b.css" integrity="sha256-YVW22O3tBbmFF49WpjeUOz5/z8zJE9nGVrvrznyRzGs=">
+    
+
+
+
+
+
+    
+
+
+
+
+
+    
+        <link rel="stylesheet" href="aeharvlee.github.io/css/my.css?rnd=1619249206">
+    
+
+
+
+
+    
+
+
+
+
+
+    
+        <script src="aeharvlee.github.io/js/main.js?rnd=1619249206" type="text/javascript" charset="utf-8"></script>
+    
+
+
+<meta property="og:title" content="Go Concurrecny Patterns in Go Chap4 Queueing" />
+<meta property="og:description" content="golang 온라인 스터디 때 제가 준비한 파트에 대한 자료를 공유드립니다.
+Queuing Sometimes it&rsquo;s useful to begin accepting work for your pipeline even though the pipeline is not yet ready for more.This process is called queuing.
+All this means is that once your stage has completed some work, it stores it in a temporary location in memory so that other stages can retrive it later, and your stage doesn&rsquo;t need to hold a reference to it." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="aeharvlee.github.io/posts/2020-08-11-go-concurrency-pattern/" /><meta property="og:image" content="aeharvlee.github.io/images/og-featured.png"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-08-11T00:00:00&#43;00:00" />
+<meta property="article:modified_time" content="2020-08-11T00:00:00&#43;00:00" />
+
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="aeharvlee.github.io/images/og-featured.png"/>
+
+<meta name="twitter:title" content="Go Concurrecny Patterns in Go Chap4 Queueing"/>
+<meta name="twitter:description" content="golang 온라인 스터디 때 제가 준비한 파트에 대한 자료를 공유드립니다.
+Queuing Sometimes it&rsquo;s useful to begin accepting work for your pipeline even though the pipeline is not yet ready for more.This process is called queuing.
+All this means is that once your stage has completed some work, it stores it in a temporary location in memory so that other stages can retrive it later, and your stage doesn&rsquo;t need to hold a reference to it."/>
+
+
+
+
+
+
+
+
+
+    
+</head>
+<body>
+    <a class="skip-main" href="#main">Skip to main content</a>
+    <div class="container">
+        <header class="common-header"> 
+            
+                <h1 class="site-title">
+    <a href="/aeharvlee.github.io">Road to Architect</a>
+</h1>
+
+    <nav>
+        
+        
+        <a class="" href="aeharvlee.github.io/aeharvlee.github.io/posts/" title="Archive">Archive</a>
+        
+    </nav>
+
+
+            
+        </header>
+        <main id="main" tabindex="-1"> 
+            
+    
+    
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Go Concurrecny Patterns in Go Chap4 Queueing</h1>
+        </header>
+        <aside>
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#queuing">Queuing</a></li>
+    <li><a href="#the-context-package">The context Package</a></li>
+  </ol>
+</nav>
+        </aside>
+        <div class="content">
+            <p><img src="/images/2020-08-11-go-concurrency-pattern/0.png" alt="thumnail"></p>
+<p>golang 온라인 스터디 때 제가 준비한 파트에 대한 자료를 공유드립니다.</p>
+<h2 id="queuing">Queuing</h2>
+<p>Sometimes it&rsquo;s useful to begin <!-- raw HTML omitted -->accepting work for your pipeline even though the pipeline is not yet ready for more.<!-- raw HTML omitted --> This process is called <em><strong>queuing</strong></em>.</p>
+<p>All this means is that once your stage has completed some work, it stores it in a temporary location in memory so that other stages can retrive it later, and your stage doesn&rsquo;t need to hold a reference to it.</p>
+<p><img src="/images/2020-08-11-go-concurrency-pattern/1.png" alt="queue"></p>
+<p>Queuing will almost never speed up the total runtime of your program; it will only allow the program to behave differently.</p>
+<p><img src="/images/2020-08-11-go-concurrency-pattern/2.png" alt="queue-table1"></p>
+<p><img src="/images/2020-08-11-go-concurrency-pattern/3.png" alt="queue-table2"></p>
+<p>The entire pipeline still took 13 seconds! But look at the short stage&rsquo;s runtime. It&rsquo;s complete after onlly 4 seconds as opposed to the 9 seconds it took previously. We&rsquo;ve cut this stage&rsquo;s runtime by two thirds! But if the entire pipeline still takes 13 seconds to execute, how does this help us?</p>
+<p>Ans: The utility of introducing a queue isn&rsquo;t that the runtime of one of stages has been reduced, but rather that <strong>the time it&rsquo;s in a <em>blocking state</em> is reduced.</strong> This allows the stage to continue doing its job.</p>
+<p><strong>In this way, the true utility of queues is to decouple stages so that the runtime of one stage has no impact on the runtime of another.</strong> Decoupling stages in this manner then cascades to alter the runtime behavior of the system as a whole, which can be either good or bad depending on your system.</p>
+<p>Let&rsquo;s begin by analyzing situations in which queuing. Where should be queues be placed? What should the buffer size be?</p>
+<ul>
+<li>If batching requests in a stage saves time.</li>
+<li>If delays in a stage produce a feedback loop into the system</li>
+</ul>
+<p>Buffers input in something faster (e.g., memory) than it is designed to send to (e.g., disk).</p>
+<p><code>buffer_test.go</code></p>
+<pre><code>Finished after work 1 times
+goos: darwin
+goarch: amd64
+BenchmarkUnbufferedWrite-8      Finished after work 100 times
+Finished after work 10000 times
+Finished after work 240836 times
+  240836              4335 ns/op
+Finished after work 1 times
+BenchmarkBufferedWrite-8        Finished after work 100 times
+Finished after work 10000 times
+Finished after work 1000000 times
+ 1000000              1002 ns/op
+PASS
+ok      command-line-arguments  3.088s
+</code></pre><p>Buffered write is faster than the unbuffered write. This is because in bufio.Writer, the writes are <em>queued</em> internally into a buffer until a sufficient chunk has been accumulated, and then the chunk is written out. The process is often called <em><strong>chunking</strong></em>, for obvious reasons.</p>
+<p>Chunking is faster because bytes.Buffer must grow its allocated memory to accommodate the bytes it must store. <strong>Growing memory is expensive;</strong> therefore, the less times we have to grow, the more efficient our system as a whole will perform. Thus, queuing has increased the performance of your system as a whole.</p>
+<p>&ldquo;<strong>Each write is ultimately a syscall and if doing frequently can put burden on the CPU.</strong> Devices like disks work better dealing with block-aligned data. To avoid the overhead of many small write operations Golang is shipped with bufio.Writer. Data, instead of going straight to destination (implementing io.Writer interface) are first accumulated inside the buffer and send out when buffers is full: producer &ndash;&gt; buffer &ndash;&gt; io.Writer&rdquo;</p>
+<p>Queuing should be implemented either:</p>
+<ul>
+<li>At the entrance to your pipeline.</li>
+<li>In stages where batching will lead to higher efficiency.</li>
+</ul>
+<p>L = the average number of units in the system.</p>
+<p>Labmda = the average arrival rate of units.</p>
+<p>W = the average time a unit spends in the system.</p>
+<p>(I NEED A HELP)</p>
+<p>파이프라인에서 안정적인 시스템은 ingress와 egress의 비율이 동일하다. ingress의 비율이 egress의 비율을 넘어서면 시스템은 불안정한 것이고 death-sprial에 진입한다. ingress가 egress보다 작아도 여전히 불안정한 시스템이다. 다만 위와 다른 건, 리소스를 완전히 사용하지 않다고 있는 것뿐이다.</p>
+<p>위 수식의 결론: 전체 파이프라인의 속도는 가장 느린 단계에 의해 결정된다.</p>
+<p><strong>References:</strong></p>
+<p><a href="https://medium.com/golangspec/introduction-to-bufio-package-in-golang-ad7d1877f762">introduction-to-bufio-package-in-golang</a></p>
+<h2 id="the-context-package">The context Package</h2>
+<p>We&rsquo;ve looked at the idiom of creating a done channel, which flows through your program and cancels all blocking concurrent operations. This works well, but it&rsquo;s also somewhat limited.</p>
+<p>It would be useful if we could communicate extra information alongside the simple notification to cancel: <strong>why the cancellation was occuring</strong>, or <strong>whether or not our function has a deadline by which it needs to complete.</strong></p>
+<p>The context package serves two primary purposes:</p>
+<ul>
+<li>To provide an API for canceling branches of your call-graph.</li>
+<li>To provide a data-bag for transporting request-scoped data through your call-graph.</li>
+</ul>
+<p>And the context package helps manage belows also:</p>
+<ul>
+<li>A gouroutine&rsquo;s parent may want to cancel it.</li>
+<li>A goroutine may want to cancel its children.</li>
+<li>Any blocking operations within a goroutine need to be preemptable so that it may be canceled.</li>
+</ul>
+<p><strong>The Context type will be the first argument to your function.</strong></p>
+<p>Instances of context.Context may look equivalent from the outside ,but internally they may change at every stack-frame. For this reason, it&rsquo;s important to always pass instances of Context into your functions. This way functions have the Context intended for it, and not the Context intended for a stack-frame N levels up the stack.</p>
+<p>Let&rsquo;s look at an example that uses the done channel patter, and see what benefits we might gain from switching to use of the context package.</p>
+<p><img src="/images/2020-08-11-go-concurrency-pattern/4.png" alt="context-diagram1"></p>
+<p><code>01_done_channel_pattern</code></p>
+<p>We&rsquo;ve set up the standard preemption method by creating a done channel and passing it down through our call-graph. If we close the done cahnnel at any point in main, both branches will be canceled.</p>
+<blockquote>
+<p>We wouldn&rsquo;t have the extra information about deadlines and errors a Context gives us.</p>
+</blockquote>
+<p><code>02_context_greeting</code></p>
+<p>1: Here <code>main</code> creates a new Context with <code>context.Background()</code> and wraps it with <code>context.WithCancel</code> to allow for cancellation.</p>
+<p>2: On this line, <code>main</code> will cancel the Context if there is an error returned from <code>printGreeting</code>.</p>
+<p>3: Here genGreeting wraps its Context with <code>context.WithTimeout</code>. This will automatically cancel the returned Context after 1 second, thereby canceling any children it passes the Context into, namely <code>locale</code>.</p>
+<ol start="4">
+<li>This line returns the reason why the Context was canceled. This error will bubble all the way up to <code>main</code>, which will cause the canllation at 2.</li>
+</ol>
+<p><img src="/images/2020-08-11-go-concurrency-pattern/5.png" alt="context-diagram2"></p>
+<pre><code>cannot print greeting: context deadline exceeded
+cannot print farewell: context canceled
+</code></pre><p>locale이 실행하는 데 최소 1분이 걸리기 때문에, genGreeting의 호출은 항상 제한 시간이 초과될 것이고, 이것은 <code>main</code>이 항상 printFarewell 아래의 호출 그래프를 취소한다는 것을 의미한다.</p>
+<p>이 프로그램을 더 개선할 수도 있다. locale이 실행되는 데 약 1분이 걸린다는 점을 알고 있으므로 locale 내부에서 마감 시한이 주어졌는지를 확인할 수 있고, 마감 시한에 거릴지도 확인할 수 있다.</p>
+<p><code>03_context_deadline</code></p>
+<p>1: Context에 마감 시한이 주어졌는지 확인한다. 마감 시한이 주어졌고, 시스템 클록이 마감 시한을 넘겼다면 context 패키지에 정의된 특별한 에러인 DeadlineExceeded를 리턴한다.</p>
+<p>&ldquo;하위의 호출 그래프가 얼마나 오래 걸리는지 알고 있어야 한다는 점인데, 이를 어떻게 달성할 수 있을까?&rdquo;</p>
+<p>요청 범위 데이터를 저장하고 조회할 수 있는 Context용 데이터 저장소를 사용할 수 있다.</p>
+<p><code>04_context_data</code></p>
+<p>Context의 키와 값이 <code>interface{}</code>로 정의돼 있기 때문에, 값을 검색할 때 Go의 타입 안전성을 잃어버리게 된다.</p>
+<p>이러한 이유로 Context에서 값을 저장하고 조회할 때는 패키지에 맞춤형 키 타입을 정의하는 것이 좋다.</p>
+<p><code>05_context_key_type</code></p>
+<p>foo type과 bar type은 분명 근본적으로 같은 값임에도 불구하고 따로 구분되는 것을 확인할 수 있다.</p>
+<p>데이터를 저장하는 데 사용하는 키를 외부로 내보내지 않는 대신 데이터를 검색하는 함수는 사용할 수 있게끔 해야한다.</p>
+<p><code>06_context_retrieval</code></p>
+<p>타입에 안전한 방식으로 Context에서 값을 조회할 수 있는 방법을 확보했다. 그러나 이 기법의 문제는, Context에 키를 저장하는 데 사용되는 타입이 비공개이기 때문에 다른 패키지에서 해당 데이터를 조회할 수 있는 방법이 없다는 것이다. 이로 인해 여러 위치에서 가져온 데이터 타입을 중심으로 패키지를 생성하는 아키텍처를 강제할 수밖에 없다.</p>
+
+        </div>
+
+        
+
+    
+
+
+<div class="post-info">
+    
+        <div class="post-date">2020-08-11</div>
+    
+    <div class="post-taxonomies">
+        
+            
+    </div>
+</div>
+
+    </article>
+
+    
+        
+    <div class="pagination post-pagination">
+        <div class="left pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-08-20-even-faster-reverse-dns-lookup-using-goroutines/">Reverse DNS Lookup Concurrently with Go</a>
+            
+        </div>
+        <div class="right pagination-item ">
+            
+                <a href="/aeharvlee.github.io/posts/2020-07-22-angelhack-seoul-2020/">Angel Hack Seoul 2020 Online Review</a>
+            
+        </div>
+    </div>
+
+    
+
+    
+        <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "aeharv" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    
+
+
+        </main>
+        
+            <footer class="common-footer">
+    
+    
+
+    <div class="common-footer-bottom">
+        
+        <div class="copyright">
+            <p>© Hyunwoo Lee, 2021<br>
+            Powered by <a target="_blank" rel="noopener noreferrer" href="https://gohugo.io/">Hugo</a>, theme <a target="_blank" rel="noopener noreferrer" href="https://github.com/mitrichius/hugo-theme-anubis">Anubis</a>.
+            </p>  
+        </div> 
+
+        
+
+    
+
+
+   
+    </div>
+</footer>
+
+        
+    </div>
+</body>
+</html>
